@@ -27,7 +27,7 @@ class AutoSchedule extends AbstractExternalModule
                         $this->page = PAGE;
                         $this->pid = db_escape(PROJECT_ID);
                         $this->Proj = $Proj;
-                        $this->schedulingEnabled = (bool)db_result(db_query('select scheduling from redcap_projects where project_id='.$this->pid));
+                        $this->schedulingEnabled = (bool)db_result(db_query('select scheduling from redcap_projects where project_id='.$this->pid), 0);
                         $this->triggerEvent = $this->getProjectSetting('event-name');
                         $this->triggerField = $this->getProjectSetting('field-name');
                 }
@@ -56,7 +56,7 @@ class AutoSchedule extends AbstractExternalModule
                 if (true!==$this->validateConfig()) { return; }
                 
                 // Does the record have a schedule already?
-                $result = db_result(db_query("select 1 from redcap_events_calendar where project_id=".db_escape($this->pid)." and record='".db_escape($record)."' "));
+                $result = db_result(db_query("select 1 from redcap_events_calendar where project_id=".db_escape($this->pid)." and record='".db_escape($record)."' "), 0);
 
                 if ($result) { return; }
 
@@ -104,7 +104,7 @@ class AutoSchedule extends AbstractExternalModule
                 $base = substr($base, 0, 10);
                 
                 // Get DAG id, if applicable (no plugin method for this!)
-                $dag = db_result(db_query("select value from redcap_data where project_id=".db_escape($this->pid)." and record='".db_escape($record)."' and field_name='__GROUPID__'"));
+                $dag = db_result(db_query("select value from redcap_data where project_id=".db_escape($this->pid)." and record='".db_escape($record)."' and field_name='__GROUPID__'"), 0);
                 $dag = ($dag) ? $dag : 'null';
 
                 
