@@ -33,20 +33,6 @@ class AutoSchedule extends AbstractExternalModule
                 }
         }
         
-        /** 
-         * Prevent enabling if scheduling not enabled for project.
-         * Admins notified of failure via email, not onscreen. There seems no other way.
-         * @param type $version
-         * @param type $project_id
-         */
-        public function redcap_module_project_enable($version, $project_id) {
-                if (!$this->schedulingEnabled) {
-                        // reverse the module enable!
-                        $this->setProjectSetting(ExternalModules::KEY_ENABLED, false, $project_id);
-                        throw new Exception("Scheduling is not enabled for project $project_id.");
-                }
-        }
-        
         /**
          * Check configuration and provide warnings when required.
          * @param int $project_id
@@ -146,8 +132,10 @@ class AutoSchedule extends AbstractExternalModule
          */
         protected function validateConfig() {
                 $errors = array();
-                if (!$this->schedulingEnabled) {
-                        $errors[] = '<strong>Scheduling is not enabled</strong> for this project.'; //throw new Exception('Scheduling is not enabled for this project.');
+                if (!$this->Proj->longitudinal) {
+                        $errors[] = '<strong>This is not a longitudinal project!</strong>'; 
+                } else if (!$this->schedulingEnabled) {
+                        $errors[] = '<strong>Scheduling is not enabled</strong> for this project.'; 
                 }
                 
                 if (!is_null($this->triggerField)) {
