@@ -7,53 +7,33 @@
 namespace MCRI\AutoSchedule;
 
 use ExternalModules\AbstractExternalModule;
-use ExternalModules\ExternalModules;
 use Logging;
 use REDCap;
 
 class AutoSchedule extends AbstractExternalModule
 {
-        private $page;
         private $pid = null;
         private $Proj;
         private $schedulingEnabled = false;
         private $triggerEvent = null;
         private $triggerField = null;
         
-        public function __construct() {
-                parent::__construct();
-                if (defined('PROJECT_ID')) {
-                        global $Proj;
-                        $this->page = PAGE;
-                        $this->pid = db_escape(PROJECT_ID);
-                        $this->Proj = $Proj;
-                        $this->schedulingEnabled = (bool)db_result(db_query('select scheduling from redcap_projects where project_id='.$this->pid), 0);
-                        $this->triggerEvent = $this->getProjectSetting('event-name');
-                        $this->triggerField = $this->getProjectSetting('field-name');
-                }
-        }
-        
-        /**
-         * Check configuration and provide warnings when required.
-         * @param int $project_id
-         */
-        public function redcap_every_page_top($project_id) {
-                if (strpos($this->page, 'ExternalModules/manager/project.php')>0 || strpos($this->page, 'ProjectSetup/index.php')!==false) {
-                        $configCheck = $this->validateConfig();
-                        
-                        if ($configCheck!==true && strpos($this->page, 'ExternalModules/manager/project.php')>0) {
-                                $this->printManagerPageContent($configCheck);
-                        } else if ($configCheck!==true && strpos($this->page, 'ProjectSetup/index.php')!==false) {
-                                $this->printSetupPageContent($configCheck);
-                        }
-                }
-        }
-        
         /** 
          * Generate schedule when required.
          */
         public function redcap_save_record($project_id, $record=null, $instrument, $event_id, $group_id=null, $survey_hash=null, $response_id=null, $repeat_instance=1) {
-                if (true!==$this->validateConfig()) { return; }
+                global $Proj;
+                $this->pid = db_escape(PROJECT_ID);
+                $this->Proj = $Proj;
+                $this->schedulingEnabled = (bool)db_result(db_query('select scheduling from redcap_projects where project_id='.$this->pid), 0);
+                $this->triggerEvent = $this->getProjectSetting('event-name');
+                $this->triggerField = $this->getProjectSetting('field-name');
+                
+                $validate = $this->validateConfig();
+                if ($validate!==true) { 
+                    \REDCap::logEvent('Auto-Schedule external module', 'Invalid configuration detected: '.PHP_EOL.print_r($validate, true), '', $record, $event_id);
+                    return; 
+                }
                 
                 // Does the record have a schedule already?
                 $result = db_result(db_query("select 1 from redcap_events_calendar where project_id=".db_escape($this->pid)." and record='".db_escape($record)."' "), 0);
@@ -152,42 +132,5 @@ class AutoSchedule extends AbstractExternalModule
                         }
                 }
                 return (count($errors)>0) ? $errors : true;
-        }
-        
-        protected function printManagerPageContent($configCheck) {
-                if (!is_array($configCheck)) { $configCheck = array((string)$configCheck); }
-                ?>
-<div id="MCRI_AutoSchedule_AutoSchedule_Msg" style="display:none;" class="red">
-    <div style="font-size:110%"><strong>Errors in Module Configuration!</strong></div>
-    <?php echo implode('<br>', $configCheck);?>
-</div>
-<script type="text/javascript">
-    $(window).on('load', function() {
-        $('#MCRI_AutoSchedule_AutoSchedule_Msg')
-            .appendTo('tr[data-module=autoschedule] td:first')
-            .fadeIn();
-    });
-</script>
-                <?php
-        }
-        
-        protected function printSetupPageContent($configCheck) {
-                if (!is_array($configCheck)) { $configCheck = array((string)$configCheck); }
-                ?>
-<div id="MCRI_AutoSchedule_AutoSchedule_Msg" style="display:none;font-size:85%;" class="red">
-    <div style="font-size:120%"><img src="<?php echo APP_PATH_IMAGES.'puzzle_small.png';?>"> <strong>Auto-Schedule External Module Errors</strong></div>
-    <?php echo implode('<br>', $configCheck);?>
-</div>
-<script type="text/javascript">
-    $(window).on('load', function() {
-        //$('button[onclick*="scheduling"]').parent('div').append($('#MCRI_AutoSchedule_AutoSchedule_Msg'));
-        //$('#MCRI_AutoSchedule_AutoSchedule_Msg').fadeIn();
-        //var schedDiv = $('button[onclick*="scheduling"]').parent('div');
-        $('#MCRI_AutoSchedule_AutoSchedule_Msg')
-            .insertAfter($('button[onclick*="scheduling"]').parent('div'))
-            .fadeIn();
-    });
-</script>
-        <?php
         }
 }

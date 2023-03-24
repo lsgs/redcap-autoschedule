@@ -1,10 +1,7 @@
 {
 	"name": "Auto-Schedule",
-
 	"description": "Generate event schedules for project records automatically on record/event/field save.",
-
 	"namespace": "MCRI\\AutoSchedule",
-
 	"authors": [
 		{
 			"name": "Luke Stevens",
@@ -12,46 +9,26 @@
 			"institution": "Murdoch Children's Research Institute"
 		}
 	],
-
-	"permissions": [
-                "redcap_module_project_enable",
-                "redcap_every_page_top",
-                "redcap_save_record"
-	],
-        
-        "compatibility": {
-                "redcap-version-min": "8.3.2"
-        },
-
-        "enable-every-page-hooks-on-system-pages": false,
-
-        "links": {
-        },
-        
-        "no-auth-pages": [
-            "noauth"
-        ],
-
-	"system-settings": [
-	],
-
+    "framework-version": 9,
+	"permissions": [ "redcap_save_record" ],
+	"system-settings": [ ],
 	"project-settings": [
-                {
-                        "key": "desc",
-                        "name": "You have 4 configuration options: <ol><li>Generate schedule using baseline date value entered in specified event/field:<br>Select both event and field.</li><li>Generate schedule using baseline date value entered in specified field (any event):<br>Select field and leave event empty.</li><li>Generate schedule on first data entry for specified event (uses current server date as baseline):<br>Select event and leave field empty.</li><li>Generate schedule on record creation (uses current server date as baseline):<br>Leave both event and field empty.</li></ol>",
-                        "type": "descriptive"
-                },
-                {
-                        "key": "event-name",
-                        "name": "Event name (optional)",
-                        "required": false,
-                        "type": "event-list"
-                },
-                {
-                        "key": "field-name",
-                        "name": "Baseline date field (optional)",
-                        "required": false,
-                        "type": "field-list"
-                }
-        ]
+        {
+            "key": "desc",
+            "name": "You have 4 configuration options: <ol><li>Generate schedule using baseline date value entered in specified event/field:<br>Select both event and field.</li><li>Generate schedule using baseline date value entered in specified field (any event):<br>Select field and leave event empty.</li><li>Generate schedule on first data entry for specified event (uses current server date as baseline):<br>Select event and leave field empty.</li><li>Generate schedule on record creation (uses current server date as baseline):<br>Leave both event and field empty.</li></ol>",
+            "type": "descriptive"
+        },
+        {
+            "key": "event-name",
+            "name": "Event name (optional)",
+            "required": false,
+            "type": "event-list"
+        },
+        {
+            "key": "field-name",
+            "name": "Baseline date field (optional)",
+            "required": false,
+            "type": "field-list"
+        }
+    ]
 }
