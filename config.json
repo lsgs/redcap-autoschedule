@@ -9,9 +9,7 @@
 			"institution": "Murdoch Children's Research Institute"
 		}
 	],
-    "framework-version": 9,
-	"permissions": [ "redcap_save_record" ],
-	"system-settings": [ ],
+    "framework-version": 14,
 	"project-settings": [
         {
             "key": "desc",

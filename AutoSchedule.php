@@ -19,12 +19,11 @@ class AutoSchedule extends AbstractExternalModule
         private $triggerEvent = null;
         private $triggerField = null;
         
-        public function __construct() {
-                parent::__construct();
+        protected function initModule() {
                 if (defined('PROJECT_ID')) {
                         global $Proj;
-                        $this->page = PAGE;
-                        $this->pid = db_escape(PROJECT_ID);
+                        $this->page = $this->escape(PAGE);
+                        $this->pid = $this->escape(PROJECT_ID);
                         $this->Proj = $Proj;
                         $this->schedulingEnabled = (bool)db_result(db_query('select scheduling from redcap_projects where project_id='.$this->pid), 0);
                         $this->triggerEvent = $this->getProjectSetting('event-name');
@@ -37,10 +36,11 @@ class AutoSchedule extends AbstractExternalModule
          * @param int $project_id
          */
         public function redcap_every_page_top($project_id) {
-                if (strpos($this->page, 'ExternalModules/manager/project.php')>0 || strpos($this->page, 'ProjectSetup/index.php')!==false) {
+                $this->initModule();
+                if (strpos($this->page, 'manager/project.php')!==false || strpos($this->page, 'ProjectSetup/index.php')!==false) {
                         $configCheck = $this->validateConfig();
                         
-                        if ($configCheck!==true && strpos($this->page, 'ExternalModules/manager/project.php')>0) {
+                        if ($configCheck!==true && strpos($this->page, 'manager/project.php')!==false) {
                                 $this->printManagerPageContent($configCheck);
                         } else if ($configCheck!==true && strpos($this->page, 'ProjectSetup/index.php')!==false) {
                                 $this->printSetupPageContent($configCheck);
@@ -52,10 +52,11 @@ class AutoSchedule extends AbstractExternalModule
          * Generate schedule when required.
          */
         public function redcap_save_record($project_id, $record, $instrument, $event_id, $group_id, $survey_hash, $response_id, $repeat_instance) {
+                $this->initModule();
                 if (true!==$this->validateConfig()) { return; }
                 
                 // Does the record have a schedule already?
-                $result = db_result(db_query("select 1 from redcap_events_calendar where project_id=".db_escape($this->pid)." and record='".db_escape($record)."' "), 0);
+                $result = db_result($this->query("select 1 from redcap_events_calendar where project_id=? and record=? ", [$this->pid,$record]), 0);
 
                 if ($result) { return; }
 
@@ -103,17 +104,18 @@ class AutoSchedule extends AbstractExternalModule
                 $base = substr($base, 0, 10);
                 
                 // Get DAG id, if applicable (no plugin method for this!)
-                $dag = db_result(db_query("select value from redcap_data where project_id=".db_escape($this->pid)." and record='".db_escape($record)."' and field_name='__GROUPID__'"), 0);
+                $redcap_data = method_exists('\REDCap', 'getDataTable') ? \REDCap::getDataTable($this->pid) : "redcap_data"; 
+                $dag = db_result($this->query("select value from $redcap_data where project_id=? and record=? and field_name='__GROUPID__'", [$this->pid, $record]), 0);
                 $dag = ($dag) ? $dag : 'null';
 
                 
                 // Generate a new schedule
                 $sql = "insert into redcap_events_calendar (record, project_id, event_id,baseline_date,group_id,event_date,event_time,event_status) ".
-                "select '".db_escape($record)."', ".db_escape($this->pid).", event_id, '".db_escape($base)."', ".db_escape($dag).", STR_TO_DATE( '".db_escape($base)."', '%Y-%m-%d' ) + INTERVAL day_offset DAY, '', 0 
+                "select '".$this->escape($record)."', ".$this->escape($this->pid).", event_id, '".$this->escape($base)."', ".$this->escape($dag).", STR_TO_DATE( '".$this->escape($base)."', '%Y-%m-%d' ) + INTERVAL day_offset DAY, '', 0 
                 from redcap_events_metadata 
-                where arm_id = (select arm_id from redcap_events_metadata where event_id = ".db_escape($event_id)." )";
+                where arm_id = (select arm_id from redcap_events_metadata where event_id = ".$this->escape($event_id)." )";
 
-                $result = db_query($sql);
+                $result = $this->query($sql, []);
 
                 if (db_insert_id() > 0) {
                     Logging::logEvent($sql,'redcap_events_calendar','INSERT',$record,"Baseline date = $base","Schedule generated");
@@ -174,7 +176,7 @@ class AutoSchedule extends AbstractExternalModule
                 if (!is_array($configCheck)) { $configCheck = array((string)$configCheck); }
                 ?>
 <div id="MCRI_AutoSchedule_AutoSchedule_Msg" style="display:none;font-size:85%;" class="red">
-    <div style="font-size:120%"><img src="<?php echo APP_PATH_IMAGES.'puzzle_small.png';?>"> <strong>Auto-Schedule External Module Errors</strong></div>
+    <div style="font-size:120%"><strong><i class="fas fa-cube mr-1"></i>Auto-Schedule External Module Errors</strong></div>
     <?php echo implode('<br>', $configCheck);?>
 </div>
 <script type="text/javascript">
